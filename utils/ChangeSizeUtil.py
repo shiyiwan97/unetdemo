@@ -2,25 +2,28 @@ import os
 
 from PIL import Image
 import numpy as np
+import cv2
 
 raw_path = 'F:\machineLearning\dataset\dataset_1000'
+save_path = 'F:\machineLearning\dataset\dataset_1000'
 
 
 class ChangeSizeUtil:
 
     # 获取特定数据集（原图、seg、ldmks混在一起的）的seg图uriList
-    def getUriList(self, path):
+    @classmethod
+    def getUriList(self, path, match):
 
         fileList = os.listdir(path)
         returnList = []
         for i in range(len(fileList)):
-            if (fileList[i].__contains__("_seg.png")):
-                returnList.add(fileList[i])
+            if (fileList[i].__contains__(match)):
+                returnList.append(fileList[i])
         return returnList
 
-    # 缩放一张图片，只支持整数倍缩小
+    # 缩放一张图片，只支持整数倍缩小，灰度图
     @classmethod
-    def shrinkPic(self, uri, widthIn, heightIn, widthOut, heightOut):
+    def shrinkPicL(self, rawUri, shrinkUri, widthIn, heightIn, widthOut, heightOut):
 
         if (heightIn % heightOut != 0 or widthIn % widthOut != 0):
             raise Exception("只支持整数倍缩小！")
@@ -29,21 +32,21 @@ class ChangeSizeUtil:
         widthFactor = widthIn / widthOut
 
         dataArray = [[0 for i in range(widthOut)] for j in range(heightOut)]
-        rawArray = np.array(Image.open(uri))
+        rawArray = np.array(Image.open(rawUri))
 
         for i in range(heightOut):
             for j in range(widthOut):
                 dataArray[i][j] = self.calculateShrinkPixelValue(widthFactor, heightFactor, i, j, rawArray, 0)
         out = Image.fromarray(np.array(dataArray), "L")
-        out.save("F:\machineLearning\dataset\\test\\000000_seg——resize.png")
-        out.show()
+        out.save(shrinkUri)
+        # out.show()
 
     # 计算缩放后某个位置的值
     @classmethod
     def calculateShrinkPixelValue(self, widthFactor, heightFactor, x, y, rawArray, add):
 
         # add表示左右/上下扩展的像素个数 todo 次数问题
-        if add > 20:
+        if add > 50:
             raise Exception("扩展了5次还是有多个出现次数最多像素值！")
 
         # todo 无法向边界扩展怎么办？
@@ -73,10 +76,29 @@ class ChangeSizeUtil:
 
         return ((list)(countDictionary.keys()))[countArray.index(max(countArray))]
 
-# np.set_printoptions(threshold=np.inf) 查看矩阵全部值
+    # np.set_printoptions(threshold=np.inf) 查看矩阵全部值
+
+    @classmethod
+    def shrinkPicsFromDir(self, rawDir, shrinkDir, widthIn, heightIn, widthOut, heightOut):
+        rawPicNameList = ChangeSizeUtil.getUriList(rawDir, 'png')
+        for i in range(len(rawPicNameList)):
+            if (rawPicNameList[i].__contains__('_seg.png')):
+                ChangeSizeUtil.shrinkPicL(os.path.join(rawDir, rawPicNameList[i]),
+                                          os.path.join(shrinkDir, rawPicNameList[i]), widthIn, heightIn, widthOut,
+                                          heightOut)
+            else:
+                img = cv2.imread(os.path.join(rawDir, rawPicNameList[i]))
+                resizeImg = cv2.resize(img, (widthOut, heightOut))
+                cv2.imwrite(os.path.join(shrinkDir, rawPicNameList[i]),resizeImg)
+
+
+
 if __name__ == '__main__':
+    ChangeSizeUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_1000',
+                                     'F:\machineLearning\dataset\dataset_1000_shrink', 512, 512, 256, 256)
+
     util = ChangeSizeUtil()
-    ChangeSizeUtil.shrinkPic("F:\machineLearning\dataset\\test\\000000_seg.png", 512, 512, 256, 256)
+    ChangeSizeUtil.shrinkPicL("F:\machineLearning\dataset\\test\\000000_seg.png", 512, 512, 256, 256)
 
     #
     # shrinkArray = [1, 2, 3, 4, 4, 5, 2, 4, 5]
