@@ -42,7 +42,7 @@ def TrainSinglePic():
             train_loss = loss(
                 F.softmax(out_image, dim=1).type(torch.FloatTensor),
                 F.one_hot(np.squeeze(torch.where(segment_image == 255, 0, segment_image), axis=1).long(), 19)
-                .permute(0, torch.FloatTensor)
+                .permute(0, 3, 2, 1).float()
             )
             opt.zero_grad()
             train_loss.backward()

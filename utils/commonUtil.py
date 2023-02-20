@@ -1,8 +1,11 @@
 import os
+import time
 
 from PIL import Image
 import numpy as np
 import cv2
+from multiprocessing import Process
+import shutil
 
 raw_path = 'F:\machineLearning\dataset\dataset_1000'
 save_path = 'F:\machineLearning\dataset\dataset_1000'
@@ -21,10 +24,25 @@ class CommonUtil:
                 returnList.append(fileList[i])
         return returnList
 
+    # 多线程划分list(processCount = 进程数，processNum=进程编号，从0开始)
+    @classmethod
+    def divideList(self, list, processCount, processNo):
+
+        returnList = []
+
+        for i in range(len(list)):
+            if (i % processCount == processNo):
+                returnList.append(list[i])
+
+        if (processNo == 0):
+            returnList.__add__(list[:-len(list) % processCount])
+
+        return returnList
+
     # 缩放一张图片，只支持整数倍缩小，灰度图
     @classmethod
     def shrinkPicL(self, rawUri, shrinkUri, widthIn, heightIn, widthOut, heightOut):
-
+        # time1 = time.time()
         if (heightIn % heightOut != 0 or widthIn % widthOut != 0):
             raise Exception("只支持整数倍缩小！")
 
@@ -38,7 +56,10 @@ class CommonUtil:
             for j in range(widthOut):
                 dataArray[i][j] = self.calculateShrinkPixelValue(widthFactor, heightFactor, i, j, rawArray, 0)
         out = Image.fromarray(np.array(dataArray), "L")
+        # time2 = time.time()
         out.save(shrinkUri)
+        # time3 = time.time()
+        # print(str(os.getpid()) + '  ==> cpu: ' + str(time2 - time1) + ' io: ' + str(time3 - time2))
         # out.show()
 
     # 计算缩放后某个位置的值
@@ -76,11 +97,10 @@ class CommonUtil:
 
         return ((list)(countDictionary.keys()))[countArray.index(max(countArray))]
 
-    # np.set_printoptions(threshold=np.inf) 查看矩阵全部值
-
     @classmethod
-    def shrinkPicsFromDir(self, rawDir, shrinkDir, widthIn, heightIn, widthOut, heightOut):
-        rawPicNameList = CommonUtil.getUriList(rawDir, 'png')
+    def shrinkPicsFromDir(self, rawDir, shrinkDir, widthIn, heightIn, widthOut, heightOut, processCount, processNo):
+        rawPicNameListAll = CommonUtil.getUriList(rawDir, 'png')
+        rawPicNameList = CommonUtil.divideList(rawPicNameListAll,processCount,processNo)
         for i in range(len(rawPicNameList)):
             if (not os.path.exists(os.path.join(shrinkDir, rawPicNameList[i]))):
                 if (rawPicNameList[i].__contains__('_seg.png')):
@@ -92,13 +112,44 @@ class CommonUtil:
                     resizeImg = cv2.resize(img, (widthOut, heightOut))
                     cv2.imwrite(os.path.join(shrinkDir, rawPicNameList[i]), resizeImg)
 
+    # np.set_printoptions(threshold=np.inf) 查看矩阵全部值
+
+    @classmethod
+    def testProcessCount(self,maxCount):
+        countTimeDic = dict()
+
+        for i in range(1,maxCount+1):
+            time1 = time.time()
+            for j in range(i):
+                process = Process(target=CommonUtil.shrinkPicsFromDir, args=('F:\machineLearning\dataset\dataset_100',
+                                                                             'F:\machineLearning\dataset\dataset_100_shrink',
+                                                                             512, 512, 256, 256, i, j))
+                process.start()
+            while (True):
+                if (len(os.listdir('F:\machineLearning\dataset\dataset_100_shrink')) == 200):
+                    time2 = time.time()
+                    countTimeDic[i] = time2 - time1
+                    print(str(i) + '  ' + str(time2 - time1))
+                    shutil.rmtree('F:\machineLearning\dataset\dataset_100_shrink')
+                    os.mkdir('F:\machineLearning\dataset\dataset_100_shrink')
+                    break
+
+        print(countTimeDic)
 
 if __name__ == '__main__':
-    CommonUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_1000',
-                                 'F:\machineLearning\dataset\dataset_1000_shrink', 512, 512, 256, 256)
+    test = 1
+    CommonUtil.testProcessCount(20)
 
-    util = CommonUtil()
-    CommonUtil.shrinkPicL("F:\machineLearning\dataset\\test\\000000_seg.png", 512, 512, 256, 256)
+
+        # p = Process(target=print,args='done')
+        # p.start()
+        # p.join()
+
+    # startTime = time.time()
+    # CommonUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_100',
+    #                              'F:\machineLearning\dataset\dataset_100_shrink', 512, 512, 256, 256)
+    # endTime = time.time()
+    # print('total time: ' + str(endTime - startTime))
 
     #
     # shrinkArray = [1, 2, 3, 4, 4, 5, 2, 4, 5]

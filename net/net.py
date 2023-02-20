@@ -15,22 +15,18 @@ class ConvBNReLUTwice(nn.Module):
         # super().__init__()类似于java中的super.init，调用父类中的init方法
         super().__init__()
         self.layer = nn.Sequential(
-            # todo bias没搞懂
             nn.Conv2d(in_channels, out_channels, self.kernel_size, self.stride, self.padding,
                       padding_mode=self.padding_mode, bias=self.bias),
-            # nn.BatchNorm2d(out_channels),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(),
             nn.Conv2d(out_channels, out_channels, self.kernel_size, self.stride, self.padding,
                       padding_mode=self.padding_mode, bias=self.bias),
-            # nn.BatchNorm2d(out_channels),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
 
-        # todo 没搞懂
-
     def forward(self, x):
         return self.layer(x)
-
 
 class Pool(nn.Module):
     """maxPool"""
