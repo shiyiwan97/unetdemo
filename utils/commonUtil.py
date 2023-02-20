@@ -8,7 +8,7 @@ raw_path = 'F:\machineLearning\dataset\dataset_1000'
 save_path = 'F:\machineLearning\dataset\dataset_1000'
 
 
-class ChangeSizeUtil:
+class CommonUtil:
 
     # 获取特定数据集（原图、seg、ldmks混在一起的）的seg图uriList
     @classmethod
@@ -46,8 +46,8 @@ class ChangeSizeUtil:
     def calculateShrinkPixelValue(self, widthFactor, heightFactor, x, y, rawArray, add):
 
         # add表示左右/上下扩展的像素个数 todo 次数问题
-        if add > 50:
-            raise Exception("扩展了5次还是有多个出现次数最多像素值！")
+        if add > 100:
+            raise Exception("扩展了100次还是有多个出现次数最多像素值！")
 
         # todo 无法向边界扩展怎么办？
         # 获取缩小后图片(x,y)处的像素对应原图的像素范围
@@ -80,25 +80,25 @@ class ChangeSizeUtil:
 
     @classmethod
     def shrinkPicsFromDir(self, rawDir, shrinkDir, widthIn, heightIn, widthOut, heightOut):
-        rawPicNameList = ChangeSizeUtil.getUriList(rawDir, 'png')
+        rawPicNameList = CommonUtil.getUriList(rawDir, 'png')
         for i in range(len(rawPicNameList)):
-            if (rawPicNameList[i].__contains__('_seg.png')):
-                ChangeSizeUtil.shrinkPicL(os.path.join(rawDir, rawPicNameList[i]),
+            if (not os.path.exists(os.path.join(shrinkDir, rawPicNameList[i]))):
+                if (rawPicNameList[i].__contains__('_seg.png')):
+                    CommonUtil.shrinkPicL(os.path.join(rawDir, rawPicNameList[i]),
                                           os.path.join(shrinkDir, rawPicNameList[i]), widthIn, heightIn, widthOut,
                                           heightOut)
-            else:
-                img = cv2.imread(os.path.join(rawDir, rawPicNameList[i]))
-                resizeImg = cv2.resize(img, (widthOut, heightOut))
-                cv2.imwrite(os.path.join(shrinkDir, rawPicNameList[i]),resizeImg)
-
+                else:
+                    img = cv2.imread(os.path.join(rawDir, rawPicNameList[i]))
+                    resizeImg = cv2.resize(img, (widthOut, heightOut))
+                    cv2.imwrite(os.path.join(shrinkDir, rawPicNameList[i]), resizeImg)
 
 
 if __name__ == '__main__':
-    ChangeSizeUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_1000',
-                                     'F:\machineLearning\dataset\dataset_1000_shrink', 512, 512, 256, 256)
+    CommonUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_1000',
+                                 'F:\machineLearning\dataset\dataset_1000_shrink', 512, 512, 256, 256)
 
-    util = ChangeSizeUtil()
-    ChangeSizeUtil.shrinkPicL("F:\machineLearning\dataset\\test\\000000_seg.png", 512, 512, 256, 256)
+    util = CommonUtil()
+    CommonUtil.shrinkPicL("F:\machineLearning\dataset\\test\\000000_seg.png", 512, 512, 256, 256)
 
     #
     # shrinkArray = [1, 2, 3, 4, 4, 5, 2, 4, 5]

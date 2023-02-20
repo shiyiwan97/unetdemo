@@ -17,14 +17,14 @@ def TrainSinglePic():
     train_data = DataLoader(MyDataset(train_data_path))
     # test_data = DataLoader(MyDataset(test_data_path))
 
-    weight_path = './weight/weight.pth'
+    weight_path = 'weight/weight.pth'
 
     unet = UNet().to(device)
     if os.path.exists((weight_path)):
         unet.load_state_dict(torch.load(weight_path))
 
     loss = nn.CrossEntropyLoss()
-    opt = optim.SGD(unet.parameters(),lr=0.01)
+    opt = optim.SGD(unet.parameters(), lr=0.01)
     # todo data应该是返回一组数据，train+test
 
     if os.path.exists(weight_path):
@@ -41,7 +41,8 @@ def TrainSinglePic():
 
             train_loss = loss(
                 F.softmax(out_image, dim=1).type(torch.FloatTensor),
-                F.one_hot(np.squeeze(torch.where(segment_image == 255,0,segment_image), axis=1).long(), 19).permute(0, 3, 2, 1).type(torch.FloatTensor)
+                F.one_hot(np.squeeze(torch.where(segment_image == 255, 0, segment_image), axis=1).long(), 19)
+                .permute(0, torch.FloatTensor)
             )
             opt.zero_grad()
             train_loss.backward()
@@ -49,7 +50,7 @@ def TrainSinglePic():
 
             if i % 1 == 0:
                 print(f'{epoch}-{i}-train_loss===>>{train_loss.item()}')
-            # if i % 20 == 0:
+            if i % 20 == 0:
                 torch.save(unet.state_dict(), weight_path)
                 # 保存权重
                 print('save successfully!')
