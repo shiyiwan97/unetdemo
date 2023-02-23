@@ -28,6 +28,7 @@ class ConvBNReLUTwice(nn.Module):
     def forward(self, x):
         return self.layer(x)
 
+
 class Pool(nn.Module):
     """maxPool"""
     kernel_size = 2
@@ -62,6 +63,21 @@ class Up(nn.Module):
         # dim:(1,2,3,4=N,C,H,W)
 
 
+class UpAndConcat(nn.Module):
+    def __init__(self, channel):
+        super(UpAndConcat, self).__init__()
+
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
+        self.convBNReLUTwice = ConvBNReLUTwice(channel, channel // 2)
+
+        def forward(self, x1, x2):
+            x1 = self.up(x1)
+            concat = torch.cat([x2, x1], dim=1)
+            return self.convBNReLUTwice(concat)
+
+
+
 class UNet(nn.Module):
     def __init__(self):
         super(UNet, self).__init__()
@@ -70,9 +86,11 @@ class UNet(nn.Module):
         self.c2 = ConvBNReLUTwice(64, 128)
         self.p2 = Pool(128)
         self.c3 = ConvBNReLUTwice(128, 256)
-        self.u1 = Up(256)
+        # self.u1 = Up(256)
+        self.u1 = UpAndConcat(256)
         self.c4 = ConvBNReLUTwice(256, 128)
-        self.u2 = Up(128)
+        # self.u2 = Up(128)
+        self.u2 = UpAndConcat(128)
         self.c5 = ConvBNReLUTwice(128, 64)
         self.out = nn.Conv2d(64, 19, 3, 1, 1)
 
