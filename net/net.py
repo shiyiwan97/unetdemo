@@ -66,17 +66,11 @@ class Up(nn.Module):
 class UpAndConcat(nn.Module):
     def __init__(self, channel):
         super(UpAndConcat, self).__init__()
-
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
-        self.convBNReLUTwice = ConvBNReLUTwice(channel, channel // 2)
-
-        def forward(self, x1, x2):
-            x1 = self.up(x1)
-            concat = torch.cat([x2, x1], dim=1)
-            return self.convBNReLUTwice(concat)
-
-
+        self.up = nn.ConvTranspose2d(channel,channel // 2,2,2)
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        concat = torch.cat([x2, x1], dim=1)
+        return concat
 
 class UNet(nn.Module):
     def __init__(self):
