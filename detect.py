@@ -26,9 +26,14 @@ class Detect:
 
         for i, (image, segment_image) in enumerate(tqdm.tqdm(test_data)):
             image, segment_image = image.to(device), segment_image.to(device)
+            a1 = image[0].cpu()
+            a2 = np.array(a1)
+            a3 = T.ToPILImage()(a1)
+            a3.show()
             out_image = unet(image)
-            softmaxResult = F.softmax(out_image, dim=1).type(torch.FloatTensor)[0].permute(1, 2, 0)
-            result = self.convertToL(self, softmaxResult, 512, 512)
+            # softmaxResult = F.softmax(out_image, dim=1).type(torch.FloatTensor)[0].permute(1, 2, 0)
+            softmaxResult = out_image[0].permute(1,2,0)
+            result = self.convertToL(self, softmaxResult, 128, 128)
 
             image = T.ToPILImage()(result)
             image.show()
@@ -37,7 +42,7 @@ class Detect:
             print(123)
 
     # 多分类结果转换为灰度图
-    # [512,512,19] -> [1,512,512]
+    # [128,128,19] -> [1,128,128]
     # todo 宽高自己算
     def convertToL(self, tensor, width, height):
 
@@ -45,8 +50,9 @@ class Detect:
 
         for i in range(width):
             for j in range(height):
-                result[0, i, j] = torch.max(tensor[i, j], dim=0)[1] + 1
+                result[0, i, j] = torch.max(tensor[i, j], dim=0)[1]
 
+        nparray = np.array(result[0])
         return result
 
 
@@ -55,7 +61,7 @@ if __name__ == '__main__':
     method = 1
 
     if (method == 1):
-        Detect.detect('F:\machineLearning\dataset\\test', 'F:\machineLearning\dataset\\test\\result',
+        Detect.detect('C:\\Users\shiyiwan\Desktop\dataset_100000_128\\train1', 'C:\\Users\shiyiwan\Desktop\dataset_100000_128\\train1\\result',
                       'weight/weight.pth')
 
     if (method == 2):

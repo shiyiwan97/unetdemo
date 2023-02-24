@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torchsummary import summary
 
 
 class ConvBNReLUTwice(nn.Module):
@@ -49,28 +50,23 @@ class Pool(nn.Module):
 class Up(nn.Module):
     def __init__(self, channel):
         super(Up, self).__init__()
-        self.layer = nn.Conv2d(channel, channel // 2, 1, 1)
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv = nn.Conv2d(channel, channel // 2, 1, 1)
 
-    def forward(self, x, feature_map):
-        up = F.interpolate(x, scale_factor=2, mode='nearest')
-
-        # 插值法进行上采样
-        # (输入,scale_factor=变成多大,mode)
-        out = self.layer(up)
-        return torch.cat((out, feature_map), dim=1)
-        # 拼接
-        # dim:(1,2,3,4=N,C,H,W)
+    def forward(self, x1, x2):
+        up = F.interpolate(x1, scale_factor=2, mode='nearest')
+        conv = self.conv(up)
+        return torch.cat((conv, x2), dim=1)
 
 
 class UpAndConcat(nn.Module):
     def __init__(self, channel):
         super(UpAndConcat, self).__init__()
-        self.up = nn.ConvTranspose2d(channel,channel // 2,2,2)
+        self.conv = nn.Conv2d(channel, channel // 2, 1, 1)
+
     def forward(self, x1, x2):
-        x1 = self.up(x1)
-        concat = torch.cat([x2, x1], dim=1)
-        return concat
+        up = F.interpolate(x1, scale_factor=2, mode='nearest')
+        conv = self.conv(up)
+        return torch.cat((conv, x2), dim=1)
 
 class UNet(nn.Module):
     def __init__(self):
@@ -99,6 +95,7 @@ class UNet(nn.Module):
 
 
 if __name__ == '__main__':
-    x = torch.randn(1, 3, 128, 128)
-    net = UNet()
-    print(net(x).shape)
+    # x = torch.randn(1, 3, 128, 128)
+    unet = UNet()
+    # print(net(x).shape)
+    print(summary(unet.cuda(),(3,128,128)))
