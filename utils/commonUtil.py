@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from multiprocessing import Process
 import shutil
+import torch
 
 raw_path = 'F:\machineLearning\dataset\dataset_1000'
 save_path = 'F:\machineLearning\dataset\dataset_1000'
@@ -100,7 +101,7 @@ class CommonUtil:
     @classmethod
     def shrinkPicsFromDir(self, rawDir, shrinkDir, widthIn, heightIn, widthOut, heightOut, processCount, processNo):
         rawPicNameListAll = CommonUtil.getUriList(rawDir, 'png')
-        rawPicNameList = CommonUtil.divideList(rawPicNameListAll,processCount,processNo)
+        rawPicNameList = CommonUtil.divideList(rawPicNameListAll, processCount, processNo)
         for i in range(len(rawPicNameList)):
             if (not os.path.exists(os.path.join(shrinkDir, rawPicNameList[i]))):
                 if (rawPicNameList[i].__contains__('_seg.png')):
@@ -115,10 +116,10 @@ class CommonUtil:
     # np.set_printoptions(threshold=np.inf) 查看矩阵全部值
 
     @classmethod
-    def testProcessCount(self,maxCount):
+    def testProcessCount(self, maxCount):
         countTimeDic = dict()
 
-        for i in range(1,maxCount+1):
+        for i in range(1, maxCount + 1):
             time1 = time.time()
             for j in range(i):
                 process = Process(target=CommonUtil.shrinkPicsFromDir, args=('F:\machineLearning\dataset\dataset_100',
@@ -136,14 +137,73 @@ class CommonUtil:
 
         print(countTimeDic)
 
+    @classmethod
+    def calculateIoU(self, pred, mask, classNum):
+        """
+        计算iou
+        :param pred:预测得到的tensor
+        :param mask: 标签tnesor
+        :return: ioutensor
+        """
+        if not pred.size() == mask.size():
+            raise Exception('维数不一致，无法计算IOU')
+
+        iou = []
+        pred = pred.view(-1)
+        mask = mask.view(-1)
+
+        for classIndex in range(classNum):
+            predIndex = pred == classIndex
+            maskIndex = mask == classIndex
+
+            intersection = predIndex[maskIndex].sum()
+            intersection2 = maskIndex[predIndex].sum()
+            union = predIndex.sum() + maskIndex.sum() - intersection
+            iou.append(intersection.float() / union.float())
+
+            global sum, count
+            sum = count = 0
+
+        for i in range(len(iou)):
+            if not torch.isnan(iou[i]):
+                sum += iou[i]
+                count += 1
+        return iou, 0 if count == 0 else sum / count
+
+    @classmethod
+    def convertToL(self, tensor):
+        """
+        转换为灰度图
+        :param tensor:tensor（c,h,w） c=1
+        :return: tensor(c,h,w) c=1
+        """
+        width = len(tensor[0])
+        height = len(tensor)
+        result = torch.empty(1, width, height)
+
+        for i in range(width):
+            for j in range(height):
+                result[0, i, j] = torch.max(tensor[i, j], dim=0)[1]
+
+        nparray = np.array(result.permute(1, 2, 0))
+        return nparray
+
+
 if __name__ == '__main__':
-    test = 1
-    CommonUtil.testProcessCount(20)
+    import torch
 
+    t1 = torch.tensor([1, 2, 1])
+    t2 = torch.tensor([1, 3, 1])
 
-        # p = Process(target=print,args='done')
-        # p.start()
-        # p.join()
+    iou1 = CommonUtil.calculateIoU(t1, t2, 6)
+    print(iou1)
+
+    # test = 1
+    # CommonUtil.testProcessCount(20)
+
+    # p = Process(target=print,args='done')
+    # p.start()
+    # p.join()
 
     # startTime = time.time()
     # CommonUtil.shrinkPicsFromDir('F:\machineLearning\dataset\dataset_100',

@@ -14,10 +14,13 @@ class Detect:
     @classmethod
     def detect(self, picPath, resultPath, weightPath):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         unet = net.UNet().to(device)
         if os.path.exists((weightPath)):
-            unet.load_state_dict(torch.load(weightPath))
+            # unet = torch.load(weightPath, map_location=torch.device('cpu'))
+            if (device == torch.device('cpu')):
+                unet.load_state_dict(torch.load(weightPath, map_location=torch.device('cpu')))
+            else:
+                unet.load_state_dict(torch.load(weightPath))
         else:
             raise Exception('读取权重数据失败！')
 
@@ -29,10 +32,10 @@ class Detect:
             a1 = image[0].cpu()
             a2 = np.array(a1)
             a3 = T.ToPILImage()(a1)
-            a3.show()
+            # a3.show()
             out_image = unet(image)
             # softmaxResult = F.softmax(out_image, dim=1).type(torch.FloatTensor)[0].permute(1, 2, 0)
-            softmaxResult = out_image[0].permute(1,2,0)
+            softmaxResult = out_image[0].permute(1, 2, 0)
             result = self.convertToL(self, softmaxResult, 128, 128)
 
             image = T.ToPILImage()(result)
@@ -52,16 +55,19 @@ class Detect:
             for j in range(height):
                 result[0, i, j] = torch.max(tensor[i, j], dim=0)[1]
 
-        nparray = np.array(result[0])
-        return result
+        nparray = np.array(result.permute(1, 2, 0))
+        return nparray
 
 
 if __name__ == '__main__':
 
+    for i in range(2, 4):
+        print(i)
+
     method = 1
 
     if (method == 1):
-        Detect.detect('C:\\Users\shiyiwan\Desktop\dataset_100000_128\\train1', 'C:\\Users\shiyiwan\Desktop\dataset_100000_128\\train1\\result',
+        Detect.detect(r'F:\machineLearning\dataset\test', r'F:\machineLearning\dataset\test\result',
                       'weight/weight.pth')
 
     if (method == 2):
