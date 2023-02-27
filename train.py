@@ -27,7 +27,7 @@ def Train():
     trainDataset = MyDataset(trainDataPath)
     testDataset = MyDataset(testDataPath)
     trainData = DataLoader(trainDataset, batch_size=8, shuffle=True)
-    testData = DataLoader(testDataset, batch_size=1, shuffle=True)
+    testData = DataLoader(testDataset, batch_size=8, shuffle=True)
 
     weightPathLatest = 'weight/latest/weight_latest.pth'
     weightPathIoU = 'weight/maxIoU/weight_max_iou.pth'
@@ -79,17 +79,17 @@ def Train():
             testPicCount = len(testDataset)
             image, segment_image = image.to(device), segment_image.to(device)
             outImage = unet(image)
-            predImage = outImage[0].permute(1, 2, 0)
+            predImage = outImage.permute(0, 2, 3, 1)
             predImage = CommonUtil.convertToL(predImage)
-            predImage = torch.tensor(predImage).permute(2, 0, 1)
-            iou = CommonUtil.calculateIoU(predImage, segment_image, 19)[1]
+            predImage = torch.tensor(predImage).permute(0, 3, 1, 2)
+            iou = CommonUtil.calculateIoU(predImage.squeeze(), segment_image, 19)[1]
             iouSum += iou
             iouCount += 1
             testLoss = loss(outImage.to(device), segment_image.long())
             testLossSum += testLoss
         testLossTotal = testLossSum / testPicCount
         iouTotal = iouSum / iouCount
-        print(f'{epoch}-{i}-train_loss===>>{testLossTotal}    iou===>>{iouTotal}')
+        print(f'{epoch}-{i}-test_loss===>>{testLossTotal}    iou===>>{iouTotal}')
 
         # 保存IoU最大的模型以及记录IoU数据
         writer.add_scalar('iou', iouTotal, epoch)
@@ -102,13 +102,13 @@ def Train():
 
         iouFileR.seek(0)
         if iouTotal > float(maxIoU):
-            iouFileR.write(str(epoch) + ' max ' + str(epoch) + ' ' + str(iouTotal) + '\n')
+            iouFileR.write(str(epoch) + ' max ' + str(epoch) + ' ' + str(iouTotal.item()) + '\n')
             torch.save(unet.state_dict(), weightPathIoU)
         else:
             iouFileR.write(str(epoch) + ' max ' + maxIoUEpoch + ' ' + maxIoU + '\n')
         iouFileR.close()
         iouFileW = open(IoURecordPath, 'a')
-        iouFileW.write(str(epoch) + ' ' + str(iouTotal) + '\n')
+        iouFileW.write(str(epoch) + ' ' + str(iouTotal.item()) + '\n')
         iouFileW.close()
         epoch += 1
         # 保存Loss最小的模型以及记录Loss数据
@@ -122,13 +122,13 @@ def Train():
 
         lossFileR.seek(0)
         if testLossTotal < float(minLoss):
-            lossFileR.write(str(epoch) + ' min ' + str(epoch) + ' ' + str(testLossTotal) + '\n')
+            lossFileR.write(str(epoch) + ' min ' + str(epoch) + ' ' + str(testLossTotal.item()) + '\n')
             torch.save(unet.state_dict(), weightPathLoss)
         else:
             lossFileR.write(str(epoch) + ' min ' + minLossEpoch + ' ' + minLoss + '\n')
         lossFileR.close()
         lossFileW = open(LossRecordPath, 'a')
-        lossFileW.write(str(epoch) + ' ' + str(iouTotal.item()) + '\n')
+        lossFileW.write(str(epoch) + ' ' + str(testLossTotal.item()) + '\n')
         lossFileW.close()
         epoch += 1
         writer.close()

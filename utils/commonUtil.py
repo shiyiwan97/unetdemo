@@ -149,7 +149,7 @@ class CommonUtil:
             raise Exception('维数不一致，无法计算IOU')
 
         iou = []
-        pred = pred.view(-1)
+        pred = pred.contiguous().view(-1)
         mask = mask.view(-1)
 
         for classIndex in range(classNum):
@@ -174,18 +174,20 @@ class CommonUtil:
     def convertToL(self, tensor):
         """
         转换为灰度图
-        :param tensor:tensor（c,h,w） c=1
-        :return: tensor(c,h,w) c=1
+        :param tensor:tensor（b,c,h,w） c=1
+        :return: tensor(b,h,w,c) c=1
         """
-        width = len(tensor[0])
-        height = len(tensor)
-        result = torch.empty(1, width, height)
+        batch = len(tensor)
+        width = len(tensor[0][0])
+        height = len(tensor[0])
+        result = torch.empty(batch, 1, width, height)
 
-        for i in range(width):
-            for j in range(height):
-                result[0, i, j] = torch.max(tensor[i, j], dim=0)[1]
+        for b in range(batch):
+            for w in range(width):
+                for h in range(height):
+                    result[b, 0, w, h] = torch.max(tensor[b, w, h], dim=0)[1]
 
-        nparray = np.array(result.permute(1, 2, 0))
+        nparray = np.array(result.permute(0, 3, 2, 1))
         return nparray
 
 
