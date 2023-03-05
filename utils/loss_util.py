@@ -33,7 +33,7 @@ class LossUtil:
             self.gamma = gamma
 
         def get_loss(self):
-            return FocalLoss(self.weight, self.gamma)
+            return FocalLoss(self.weight,self.gamma)
 
 class FocalLoss(nn.modules.loss._WeightedLoss):
     def __init__(self, weight, gamma=2, reduction='mean'):
@@ -57,6 +57,8 @@ class FocalLoss(nn.modules.loss._WeightedLoss):
 
 
 if __name__ == "__main__":
+
+    print(LossUtil.FocalLoss(torch.tensor([1,1,1]),2).get_loss())
     # m = nn.LogSoftmax(dim=1)
     # loss = nn.NLLLoss()
     # a = torch.Tensor([0.5, 0.7, 0.1])

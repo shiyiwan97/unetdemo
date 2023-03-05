@@ -25,11 +25,10 @@ class OptimizerUtil:
         SGD优化器
         """
 
-        def __init__(self, parameters, lr, momentum, weight_decay):
-            self.parameters = parameters
+        def __init__(self, lr, momentum, weight_decay):
             self.lr = lr
             self.momentum = momentum
             self.weight_decay = weight_decay
 
-        def get_optimizer(self):
-            return optim.SGD(self.parameters, self.lr, momentum=self.momentum, weight_decay=self.weight_decay)
+        def get_optimizer(self, parameters):
+            return optim.SGD(parameters, self.lr, momentum=self.momentum, weight_decay=self.weight_decay)

@@ -25,7 +25,7 @@ class NewTrain:
         # 4.定义损失函数
         loss_function = config.loss_function.get_loss()
         # 5.定义优化器
-        optimizer = config.optimizer.get_optimizer()
+        optimizer = config.optimizer.get_optimizer(unet.parameters())
         # 6.数据集
         train_dataset = MyDataset(config.train_data_path)
         test_dataset = MyDataset(config.test_data_path)
