@@ -1,7 +1,7 @@
 from net import net
 import torch
 import os
-from utils.commonUtil import *
+from utils.common_util import *
 from data import *
 from torch.utils.data import DataLoader
 import tqdm
@@ -61,14 +61,14 @@ class Detect:
 
 if __name__ == '__main__':
 
-    for i in range(2, 4):
-        print(i)
+    # for i in range(2, 4):
+    #     print(i)
 
     method = 1
 
     if (method == 1):
-        Detect.detect(r'F:\machineLearning\dataset\test', r'F:\machineLearning\dataset\test\result',
-                      'weight/weight.pth')
+        Detect.detect(r'C:\\Users\\shiyiwan\\Desktop\\1', r'C:\\Users\\shiyiwan\\Desktop\\1\\detect',
+                      'weight/latest/weight_latest.pth')
 
     if (method == 2):
         lImg = Image.open("F:\machineLearning\dataset\\test\\000000_seg.png")

@@ -190,6 +190,16 @@ class CommonUtil:
         nparray = np.array(result.permute(0, 3, 2, 1))
         return nparray
 
+    @classmethod
+    def load_weight(self,net,weight_path,device):
+        if os.path.exists((weight_path)):
+            if (device == torch.device('cpu')):
+                net.load_state_dict(torch.load(weight_path, map_location=torch.device('cpu')))
+            else:
+                net.load_state_dict(torch.load(weight_path))
+            print('读取权重数据成功！')
+        else:
+            print('读取权重数据失败！')
 
 if __name__ == '__main__':
     import torch

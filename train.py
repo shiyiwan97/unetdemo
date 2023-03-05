@@ -6,7 +6,7 @@ import tqdm
 from net.net import *
 from torch import nn, optim
 import torch.nn.functional as F
-from utils.commonUtil import *
+from utils.common_util import *
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 
