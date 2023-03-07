@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from utils.common_util import *
 from torch.utils.tensorboard import SummaryWriter
 import datetime
+from utils.evaluation_util import EvaluationUtil
 
 
 def Train():
@@ -83,6 +84,7 @@ def Train():
             predImage = CommonUtil.convertToL(predImage)
             predImage = torch.tensor(predImage).permute(0, 3, 1, 2)
             iou = CommonUtil.calculateIoU(predImage.squeeze(), segment_image, 19)[1]
+            iou2 = EvaluationUtil.calculate_IoU(predImage, segment_image)
             iouSum += iou
             iouCount += 1
             testLoss = loss(outImage.to(device), segment_image.long())

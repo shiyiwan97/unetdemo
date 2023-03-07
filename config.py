@@ -33,7 +33,7 @@ class Config:
         self.writer = SummaryWriter(log_dir=os.path.join(log_dir, str(len(os.listdir(log_dir)) + 1) + '.' + str(now)))
 
         self.weight_path = weight_path
-        self.weight_path_latest = os.path.join(self.weight_path, 'latest_weight.pth')
+        self.weight_path_latest = os.path.join(self.weight_path, '\latest\latest_weight.pth')
         self.loss_record_path = os.path.join(self.weight_path, 'iou')
         self.weight_path_iou = os.path.join(self.weight_path, 'max_IoU_weight.pth')
         self.iou_record_loss = os.path.join(self.weight_path, 'loss')

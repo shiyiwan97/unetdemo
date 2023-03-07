@@ -2,6 +2,8 @@ from abc import abstractmethod
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+import numpy as np
 
 
 class LossUtil:
@@ -33,7 +35,8 @@ class LossUtil:
             self.gamma = gamma
 
         def get_loss(self):
-            return FocalLoss(self.weight,self.gamma)
+            return FocalLoss(self.weight, self.gamma)
+
 
 class FocalLoss(nn.modules.loss._WeightedLoss):
     def __init__(self, weight, gamma=2, reduction='mean'):
@@ -41,14 +44,16 @@ class FocalLoss(nn.modules.loss._WeightedLoss):
         self.gamma = gamma
         self.weight = weight
 
-    def forward(self, preds, labels):
+    def forward(self, pred, label):
         """
-        preds:softmax输出结果
+        preds:预测值
         labels:真实值
         """
+        pred = nn.Softmax()(pred)
+        label = F.one_hot(np.squeeze(label.long()))[:, :, :, 0:pred.size(1)].permute(0, 3, 1, 2)
         eps = 1e-7
-        y_pred = preds.view((preds.size()[0], preds.size()[1], -1))  # B*C*H*W->B*C*(H*W)
-        target = labels.view(y_pred.size())  # B*C*H*W->B*C*(H*W)
+        y_pred = pred.view((pred.size()[0], pred.size()[1], -1))  # B*C*H*W->B*C*(H*W)
+        target = label.view(y_pred.size())  # B*C*H*W->B*C*(H*W)
         ce = -1 * torch.log(y_pred + eps) * target
         floss = torch.pow((1 - y_pred), self.gamma) * ce
         floss = torch.mul(floss, self.weight)
@@ -57,8 +62,7 @@ class FocalLoss(nn.modules.loss._WeightedLoss):
 
 
 if __name__ == "__main__":
-
-    print(LossUtil.FocalLoss(torch.tensor([1,1,1]),2).get_loss())
+    print(LossUtil.FocalLoss(torch.tensor([1, 1, 1]), 2).get_loss())
     # m = nn.LogSoftmax(dim=1)
     # loss = nn.NLLLoss()
     # a = torch.Tensor([0.5, 0.7, 0.1])
