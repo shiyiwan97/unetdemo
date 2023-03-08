@@ -26,16 +26,16 @@ class SaveWeightUtil:
         epoch = int(splitArray[0]) + 1
 
         record_file_r.seek(0)
-        if evaluation_param > float(best_value) if best_value_type == 1 else evaluation_param < float(best_value):
-            record_file_r.write(str(epoch) + ' max ' if best_value_type == 1 else ' min ' + str(epoch) + ' ' + str(
-                evaluation_param.item()) + '\n')
+        if evaluation_param < float(best_value) if best_value_type == 1 else evaluation_param > float(best_value):
+            record_file_r.write(str(epoch) + (' max ' if best_value_type == 1 else ' min ') + str(epoch) + ' ' + str(
+                evaluation_param) + '\n')
             torch.save(weight, save_weight_path)
         else:
             record_file_r.write(
-                str(epoch) + ' max ' if best_value_type == 1 else ' min ' + best_value_epoch + ' ' + best_value + '\n')
+                str(epoch) + (' max ' if best_value_type == 1 else ' min ') + best_value_epoch + ' ' + best_value + '\n')
         record_file_r.close()
         record_file_w = open(record_path, 'a')
-        record_file_w.write(str(epoch) + ' ' + str(evaluation_param.item()) + '\n')
+        record_file_w.write(str(epoch) + ' ' + str(evaluation_param) + '\n')
         record_file_w.close()
 
 
