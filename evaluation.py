@@ -61,6 +61,30 @@ class Evaluation:
         mIoU_file_w.close()
         iou_file_a.close()
 
+    @classmethod
+    def find_best(cls, file_info):
+        for i in range(len(file_info)):
+            file_uri = file_info[i][0]
+            best_value_type = file_info[i][1]
+            value_index = file_info[i][2]
+            values = []
+
+            with open(file_uri, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    values.append(line.split(' ')[value_index])
+
+            if best_value_type == 'max':
+                best_value = max(values)
+            else:
+                best_value = min(values)
+
+            best_value_index = values.index(best_value)
+            print(file_uri + ' ' + str(best_value_index) + ' ' + str(best_value))
+
 
 if __name__ == '__main__':
-    Evaluation.evaluation(r'F:\machineLearning\unetdemo\weight\latest', r'F:\machineLearning\dataset\test', 8, r'evaluation\record')
+    Evaluation.find_best([[r'evaluation\record\mIoU', 'max', 1], [r'evaluation\record\loss', 'min', 1]])
+
+    # Evaluation.evaluation(r'F:\machineLearning\unetdemo\weight\latest', r'F:\machineLearning\dataset\test\2pics', 2,
+    #                       r'evaluation\record')
