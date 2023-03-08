@@ -201,7 +201,20 @@ class CommonUtil:
         else:
             print('读取权重数据失败！')
 
+    @classmethod
+    def get_uri_from_folder(cls,folder_uri,suffix):
+        uris = os.listdir(folder_uri)
+        result = []
+        for i in range(len(uris)):
+            if uris[i].endswith(suffix):
+                result.append(os.path.join(folder_uri,uris[i]))
+
+        return result
+
 if __name__ == '__main__':
+    list = CommonUtil.get_uri_from_folder(".\\",'txt')
+    print(list)
+
     import torch
 
     t1 = torch.tensor([1, 2, 1])

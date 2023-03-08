@@ -28,18 +28,36 @@ class EvaluationUtil:
         return confusion_matrix(label, pred)
 
     @classmethod
-    def calculate_mIoU(self, pred, label, classnum, ignore, device):
+    def calculate_mIoU(self, pred, label, class_num, ignore, device):
         imgsize = pred.size(2)
         batchsize = pred.size(0)
 
-        metric = SegmentationMetric(classnum, device)
+        metric = SegmentationMetric(class_num, device)
 
         imgPredictsoftmax = torch.softmax(pred, dim=1)
         imgPredict = torch.argmax(imgPredictsoftmax, dim=1)
 
-        ignore_labels = ignore
-        hist = metric.addBatch(imgPredict, label, ignore_labels)
+        hist = metric.addBatch(imgPredict, label, ignore)
 
         mIoU = metric.meanIntersectionOverUnion()
 
         return mIoU
+
+    @classmethod
+    def calculate_iou(cls, pred, label, class_num, ignore, device):
+        metric = SegmentationMetric(class_num, device)
+
+        imgPredictsoftmax = torch.softmax(pred, dim=1)
+        imgPredict = torch.argmax(imgPredictsoftmax, dim=1)
+        metric.addBatch(imgPredict, label, ignore)
+        return metric.IntersectionOverUnion()
+
+    @classmethod
+    def get_segmentation_metric(cls, pred, label, class_num, ignore, device):
+
+        metric = SegmentationMetric(class_num, device)
+        imgPredictsoftmax = torch.softmax(input=pred, dim=1)
+        imgPredict = torch.argmax(imgPredictsoftmax, dim=1)
+        hist = metric.addBatch(imgPredict, label, ignore)
+
+        return metric
