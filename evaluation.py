@@ -38,12 +38,12 @@ class Evaluation:
             with torch.no_grad():
                 loss_sum = 0.
                 mIoU_sum = 0.
-                iou_mean = torch.zeros([19])
+                iou_mean = torch.zeros([19]).to(device)
                 for j, (image, segment_image) in enumerate(tqdm.tqdm(test_dataloader)):
                     image = image.to(device)
                     segment_image = segment_image.to(device)
                     out_image = unet(image)
-                    loss_sum += loss(out_image, segment_image.long())
+                    loss_sum += loss(out_image, segment_image.long()).item()
 
                     segmentation_metric = EvaluationUtil.get_segmentation_metric(out_image, segment_image, 19, [255],
                                                                                  device)
@@ -56,6 +56,9 @@ class Evaluation:
             loss_file_a.write(weight_uris[i] + ' ' + str(loss_mean) + '\n')
             mIoU_file_w.write(weight_uris[i] + ' ' + str(mIoU_mean) + '\n')
             iou_file_a.write(weight_uris[i] + ' ' + str(iou_mean) + '\n')
+            print(weight_uris[i] + '.loss:' + str(loss_mean))
+            print(weight_uris[i] + '.mIoU:' + str(mIoU_mean))
+            print(weight_uris[i] + '.iou:' + str(iou_mean))
 
         loss_file_a.close()
         mIoU_file_w.close()
@@ -84,7 +87,6 @@ class Evaluation:
 
 
 if __name__ == '__main__':
+    # Evaluation.evaluation(r'D:\machine-learning\unetdemo\weight\baseline', r'C:\Users\shiyiwan\Desktop\dataset_100000_128\test', 32, r'evaluation\record')
     Evaluation.find_best([[r'evaluation\record\mIoU', 'max', 1], [r'evaluation\record\loss', 'min', 1]])
 
-    # Evaluation.evaluation(r'F:\machineLearning\unetdemo\weight\latest', r'F:\machineLearning\dataset\test\2pics', 2,
-    #                       r'evaluation\record')

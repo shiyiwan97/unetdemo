@@ -30,31 +30,37 @@ class LossUtil:
             return nn.BCELoss()
 
     class FocalLoss:
-        def __init__(self, weight, gamma):
+        def __init__(self, weight, gamma, device):
             self.weight = weight
             self.gamma = gamma
+            self.device = device
 
         def get_loss(self):
-            return FocalLoss(self.weight, self.gamma)
+            return FocalLoss(self.weight, self.gamma, self.device)
 
 
 class FocalLoss(nn.modules.loss._WeightedLoss):
-    def __init__(self, weight, gamma=2, reduction='mean'):
+    def __init__(self, weight, gamma, device, reduction='mean'):
         super(FocalLoss, self).__init__(weight, reduction=reduction)
         self.gamma = gamma
         self.weight = weight
+        self.device = device
 
     def forward(self, pred, label):
         """
         preds:预测值
         labels:真实值
         """
-        pred = nn.Softmax()(pred)
-        label = F.one_hot(np.squeeze(label.long()))[:, :, :, 0:pred.size(1)].permute(0, 3, 1, 2)
+        self.weight.to(self.device)
+        pred.to(self.device)
+        label.to(self.device)
+        # pred = nn.Softmax()(pred)
+        label = F.one_hot(np.squeeze(label.long()), num_classes=19)[:, :, :, 0:pred.size(1)].permute(0, 3, 1, 2)
         eps = 1e-7
-        y_pred = pred.view((pred.size()[0], pred.size()[1], -1))  # B*C*H*W->B*C*(H*W)
-        target = label.view(y_pred.size())  # B*C*H*W->B*C*(H*W)
+        y_pred = pred.view((pred.size()[0], pred.size()[1], -1)) # B*C*H*W->B*C*(H*W)
+        target = label.view(y_pred.size()) # B*C*H*W->B*C*(H*W)
         ce = -1 * torch.log(y_pred + eps) * target
+        # ce = nn.CrossEntropyLoss(ignore_index=255)(pred,label)
         floss = torch.pow((1 - y_pred), self.gamma) * ce
         floss = torch.mul(floss, self.weight)
         floss = torch.sum(floss, dim=1)
