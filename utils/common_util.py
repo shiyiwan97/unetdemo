@@ -1,6 +1,7 @@
 import os
 import time
 
+import PIL
 from PIL import Image
 import numpy as np
 import cv2
@@ -191,7 +192,7 @@ class CommonUtil:
         return nparray
 
     @classmethod
-    def load_weight(self,net,weight_path,device):
+    def load_weight(self, net, weight_path, device):
         if os.path.exists((weight_path)):
             if (device == torch.device('cpu')):
                 net.load_state_dict(torch.load(weight_path, map_location=torch.device('cpu')))
@@ -202,26 +203,50 @@ class CommonUtil:
             print('读取权重数据失败！')
 
     @classmethod
-    def get_uri_from_folder(cls,folder_uri,suffix):
+    def get_uri_from_folder(cls, folder_uri, suffix):
         uris = os.listdir(folder_uri)
         result = []
         for i in range(len(uris)):
             if uris[i].endswith(suffix):
-                result.append(os.path.join(folder_uri,uris[i]))
+                result.append(os.path.join(folder_uri, uris[i]))
 
         return result
 
+    @classmethod
+    def calculate_pixel_type(cls, folder_uri, suffix, record_uri):
+        uris = os.listdir(folder_uri)
+        pic_uris = []
+        for i in range(len(uris)):
+            if (uris[i].endswith(suffix)):
+                pic_uris.append(os.path.join(folder_uri,uris[i]))
+
+        result = np.zeros(19, dtype=np.int32)
+        for i in range(len(pic_uris)):
+            img = PIL.Image.open(pic_uris[i])
+            for j in range(0, 19):
+                result[j] += np.sum(np.asarray(img) == j)
+
+        print(str(result))
+        file = open(record_uri, 'a')
+        file.write(str(result))
+        file.close()
+
+
 if __name__ == '__main__':
-    list = CommonUtil.get_uri_from_folder(".\\",'txt')
-    print(list)
+    CommonUtil.calculate_pixel_type(r'F:\machineLearning\dataset\test\train', 'seg.png',
+                                    r'F:\machineLearning\dataset\test\train\record')
 
-    import torch
 
-    t1 = torch.tensor([1, 2, 1])
-    t2 = torch.tensor([1, 3, 1])
-
-    iou1 = CommonUtil.calculateIoU(t1, t2, 6)
-    print(iou1)
+    # list = CommonUtil.get_uri_from_folder(".\\", 'txt')
+    # print(list)
+    #
+    # import torch
+    #
+    # t1 = torch.tensor([1, 2, 1])
+    # t2 = torch.tensor([1, 3, 1])
+    #
+    # iou1 = CommonUtil.calculateIoU(t1, t2, 6)
+    # print(iou1)
 
     # test = 1
     # CommonUtil.testProcessCount(20)
