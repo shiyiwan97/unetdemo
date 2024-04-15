@@ -33,13 +33,26 @@ class Detect:
             a2 = np.array(a1)
             a3 = T.ToPILImage()(a1)
             # a3.show()
+            # 输出的是一个[batchsize,19,128,128]的tensor
             out_image = unet(image)
-            # softmaxResult = F.softmax(out_image, dim=1).type(torch.FloatTensor)[0].permute(1, 2, 0)
-            softmaxResult = out_image[0].permute(1, 2, 0)
-            result = self.convertToL(self, softmaxResult, 128, 128)
-
-            image = T.ToPILImage()(result)
-            image.show()
+            # 在第二个维度进行softmax，得到的是一个[batchsize,19,128,128]的tensor，其中[batchsize,:,0,0].sum()=1
+            softmax = F.softmax(out_image, dim=1)
+            # 转化为32位浮点数张量，并且取出第一个维度，就是batchsize的第一张，此时为[19,128,128]
+            softmaxResult = softmax.type(torch.FloatTensor)[0]
+            # 进行argmax，得到的是一个[128,128]的张量，值为每个像素点预测的类别
+            pred = torch.argmax(softmaxResult, dim=0)
+            # 为了让显示更加明显，放大多倍
+            resizePred = pred.float() / 18 * 255
+            # 转化为uint8，能更好的兼容图像显示
+            unit8Pic = resizePred.type(torch.uint8)
+            # 显示图片
+            result = T.ToPILImage()(unit8Pic)
+            result.show()
+            # softmaxResult = out_image[0].permute(1, 2, 0)
+            # result = self.convertToL(self, softmaxResult, 128, 128)
+            #
+            # image = T.ToPILImage()(result)
+            # image.show()
 
             # todo 多分类问题，softmax到灰度图
             print(123)
@@ -64,11 +77,15 @@ if __name__ == '__main__':
     # for i in range(2, 4):
     #     print(i)
 
-    method = 1
+    method = 3
 
     if (method == 1):
-        Detect.detect(r'C:\\Users\\shiyiwan\\Desktop\\1', r'C:\\Users\\shiyiwan\\Desktop\\1\\detect',
-                      'weight/latest/weight_latest.pth')
+        Detect.detect(r'D:\Dataset\dataset_1000\test1', r'D:\Dataset\dataset_1000\test1\rs',
+                      'weight\\baseline\\weight_2.pth')
+
+    if (method == 3):
+        Detect.detect(r'D:\Dataset\dataset_cpu_1', r'D:\Dataset\dataset_cpu_1\rs',
+                      'weight\\latest\\weight_latest.pth')
 
     if (method == 2):
         lImg = Image.open("F:\machineLearning\dataset\\test\\000000_seg.png")

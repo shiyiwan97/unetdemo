@@ -16,9 +16,9 @@ def Train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('cuda' if torch.cuda.is_available() else 'cpu')
     # trainDataPath = 'F:\machineLearning\dataset\dataset_1000'
-    trainDataPath = r'F:\machineLearning\dataset\test\train'
-    testDataPath = r'F:\machineLearning\dataset\test\test'
-    log_dir = r'F:\machineLearning\dataset\test\log'
+    trainDataPath = r'D:\Dataset\dataset_cpu_1'
+    testDataPath = r'D:\Dataset\dataset_cpu_1'
+    log_dir = r'D:\MyProject\unetdemo\log'
     now = datetime.datetime.now()
     now = str(now).replace(':', '.')
 
@@ -27,8 +27,8 @@ def Train():
 
     trainDataset = MyDataset(trainDataPath)
     testDataset = MyDataset(testDataPath)
-    trainData = DataLoader(trainDataset, batch_size=8, shuffle=True)
-    testData = DataLoader(testDataset, batch_size=8, shuffle=True)
+    trainData = DataLoader(trainDataset, batch_size=1, shuffle=True)
+    testData = DataLoader(testDataset, batch_size=1, shuffle=True)
 
     weightPathLatest = 'weight/latest/weight_latest.pth'
     weightPathIoU = 'weight/maxIoU/weight_max_iou.pth'
@@ -83,7 +83,8 @@ def Train():
             predImage = outImage.permute(0, 2, 3, 1)
             predImage = CommonUtil.convertToL(predImage)
             predImage = torch.tensor(predImage).permute(0, 3, 1, 2)
-            iou = CommonUtil.calculateIoU(predImage.squeeze(), segment_image, 19)[1]
+            # predImage = predImage.squeeze(0)
+            iou = CommonUtil.calculateIoU(predImage.squeeze(0), segment_image, 19)[1]
             iou2 = EvaluationUtil.calculate_IoU(predImage, segment_image)
             iouSum += iou
             iouCount += 1
