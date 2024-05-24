@@ -21,3 +21,4 @@ traced_model = torch.jit.trace(model, example_input)
 
 # 保存追踪的模型
 traced_model.save("simple_model.pt")
+    
