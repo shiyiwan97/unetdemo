@@ -32,7 +32,9 @@ class Config:
 
         now = datetime.datetime.now()
         now = str(now).replace(':', '.')
-        self.writer = SummaryWriter(log_dir=os.path.join(self.logDir, str(datetime.datetime.now()).replace(':', '.') + 'log'))
+        train_writer = SummaryWriter(log_dir=os.path.join(self.logDir, 'train'))
+        test_writer = SummaryWriter(log_dir=os.path.join(self.logDir, 'test'))
+        self.writers = {'train': train_writer, 'test': test_writer}
         self.weight_path_latest = os.path.join(self.weightPath, '\latest\latest_weight.pth')
         self.loss_record_path = os.path.join(self.weightPath, 'iou')
         self.weight_path_iou = os.path.join(self.weightPath, 'max_IoU_weight.pth')
@@ -62,7 +64,7 @@ class Config:
     def get_config():
         train_data_path = r'D:\Dataset\dataset_1'
         test_data_path = r'D:\Dataset\dataset_1'
-        epoch = 20
+        epoch = 5
         batch_size = 8
         folderPath = r'trainFolder'
         load_weight = 0
@@ -108,22 +110,34 @@ class Config:
 
     def recordConfig(self, recordPath):
         with open(os.path.join(recordPath, 'config.txt'), 'w') as f:
-            trainDatesetSize = int(len(os.listdir(self.train_data_path)) / 3)
-            testDatasetSize = int(len(os.listdir(self.test_data_path)) / 3)
-            f.write(f"trainDatasetSize:{trainDatesetSize}\n")
-            f.write(f"testDatasetSize:{testDatasetSize}\n")
-            f.write(f"oneEpochUsePicCount:{trainDatesetSize + testDatasetSize}\n")
-            f.write("--------------------------------------------------------------\n")
-            f.write(f"batchSize:{self.batch_size}\n")
-            f.write(f"epoch:{self.epoch}\n")
-            f.write(f"optimizer:{self.optimizer.__class__.__name__}\n")
-            f.write(f"optimizerConfig:{self.optimizer.configtoStr()}\n")
-            f.write("--------------------------------------------------------------\n")
-            f.write(f"costTime:{self.end_time - self.start_time}\n")
+            f.write(self.desc)
 
     def printConfig(self):
         pass
 
+    def writeConfigToLog(self):
+        self.writers['train'].add_text('train',self.desc)
+
+    def closeWriter(self):
+        for writer in self.writers.values():
+            writer.close()
+
+    def generateDesc(self):
+        trainDatesetSize = int(len(os.listdir(self.train_data_path)) / 3)
+        testDatasetSize = int(len(os.listdir(self.test_data_path)) / 3)
+        self.desc = f"""
+        trainDatasetSize: {trainDatesetSize}
+        testDatasetSize: {testDatasetSize}
+        oneEpochUsePicCount: {trainDatesetSize + testDatasetSize}
+        --------------------------------------------------------------
+        batchSize: {self.batch_size}
+        epoch: {self.epoch}
+        optimizer: {self.optimizer.__class__.__name__}
+        optimizerConfig: {self.optimizer.configtoStr()}
+        --------------------------------------------------------------
+        """
+        if (hasattr(self,'end_time')):
+            self.desc += f"""costTime: {self.end_time - self.start_time}"""
 
 if __name__ == '__main__':
     print(Config.get_config().createAndGetFolder())

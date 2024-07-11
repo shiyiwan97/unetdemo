@@ -12,9 +12,11 @@ from data import *
 from config import Config
 import tqdm
 import datetime
-
+from tqdm import tqdm
+import logging
 
 from torch.utils.tensorboard import SummaryWriter
+
 
 
 class NewTrain:
@@ -36,12 +38,17 @@ class NewTrain:
         train_dataset = MyDataset(config.train_data_path)
         test_dataset = MyDataset(config.test_data_path)
         train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
-        test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
         # 7. tensorboard
         config.setStartTime(datetime.datetime.now())
-        writer = config.writer
+        trainWriter = config.writers['train']
+        testWriter = config.writers['test']
+        logging.basicConfig(level=logging.INFO, format='%(message)s')
+        logger = logging.getLogger()
         # 8.训练&评价
+        config.generateDesc()
+        logger.info(config.desc)
         epoch = 1
         startEpochTime = datetime.datetime.now()
         while epoch <= config.epoch:
@@ -50,48 +57,53 @@ class NewTrain:
             train_pic_count = len(train_dataset)
             test_pic_count = len(test_dataset)
             mIoU_sum = 0.
-            loss_sum = 0.
+            test_loss_sum = 0.
 
-            for i, (image, segment_image) in enumerate(tqdm.tqdm(train_dataloader)):
+            for i, (image, segment_image) in enumerate(tqdm(train_dataloader)):
                 image = image.to(device)
                 segment_image = segment_image.to(device)
                 out_image = unet(image)
                 loss = loss_function(out_image, segment_image.long())
                 optimizer.zero_grad()
                 loss.backward()
+                # 梯度会累计，每一次更新参数的时候需要归零；更新参数也依赖于梯度，所以先要反向传播计算梯度
                 optimizer.step()
+                # loss.item()只是获取损失的副本，一般不会受其他操作的影响
                 train_loss_sum += loss.item()
             torch.save(unet.state_dict(), config.weightPath + r'\weight_' + str(epoch) + r'.pth')
-            trainLossTotal = train_loss_sum / train_pic_count
-            print(f'{epoch}-train_loss_FL===>>{trainLossTotal}')
-
-            writer.add_scalar('loss', trainLossTotal, epoch)
+            trainLossMean = train_loss_sum / train_pic_count
+            logger.info(f'epoch:{epoch}   train_loss_mean:{trainLossMean}')
 
             with torch.no_grad():
-                for i, (image, segment_image) in enumerate(tqdm.tqdm(test_dataloader)):
+                for i, (image, segment_image) in enumerate(tqdm(test_dataloader)):
                     image = image.to(device)
                     segment_image = segment_image.to(device)
                     out_image = unet(image)
                     loss = loss_function(out_image, segment_image.long()).item()
                     mIoU = EvaluationUtil.calculate_mIoU(out_image, segment_image, 19, [255], device).item()
                     mIoU_sum += mIoU
-                    loss_sum += loss
+                    test_loss_sum += loss
 
             # 8.更新最佳权重
             best_value_type_max = 1
             best_value_type_min = 0
             mean_mIoU = mIoU_sum / test_pic_count
-            # mean_loss = loss_sum / test_pic_count
+            testLossMean = test_loss_sum / test_pic_count
             # SaveWeightUtil.save_weight('mIoU', mean_mIoU, best_value_type_max, r'.\weight', unet.state_dict())
-            # SaveWeightUtil.save_weight('loss', mean_loss, best_value_type_min, r'.\weight', unet.state_dict())
+            # SaveWeightUtil.save_weight('loss', testLossMean, best_value_type_min, r'.\weight', unet.state_dict())
 
+            # writer.add_scalar('loss/test-loss', testLossMean, epoch)
+            trainWriter.add_scalar('loss', trainLossMean, epoch)
+            # 因为每个epoch，每次dataloader读图时都会更新梯度，所以测试集的损失对应下一次训练集的损失比较好
+            testWriter.add_scalar('loss', testLossMean, epoch + 1)
             epoch += 1
 
         endEpochTime = datetime.datetime.now()
         config.setEndTime(endEpochTime)
         # config.setResult()
         config.recordConfig(config.trainFolder)
-        writer.close()
+        config.writeConfigToLog()
+        config.closeWriter()
 
 
 if __name__ == '__main__':
